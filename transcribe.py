@@ -21,6 +21,8 @@ import json
 import threading
 import time
 
+import socket
+
 import pyaudio
 import websocket
 from websocket._abnf import ABNF
@@ -128,7 +130,7 @@ def on_error(self, error):
     print(error)
 
 
-def on_close(ws):
+def on_close(ws, close_status_code, close_msg):
     """Upon close, print the complete and final transcript."""
     global LAST
     if LAST:
@@ -171,8 +173,11 @@ def get_url():
     # for details on which endpoints are for each region.
     region = config.get('auth', 'region')
     host = REGION_MAP[region]
-    return ("wss://{}/speech-to-text/api/v1/recognize"
-           "?model=en-US_BroadbandModel").format(host)
+    #return ("wss://{}/speech-to-text/api/v1/recognize"
+    #       "?model=en-US_BroadbandModel").format(host)
+
+    return 'wss://api.eu-de.speech-to-text.watson.cloud.ibm.com/instances/90b8666b-9dbb-4121-9739-a30f31611081/v1/recognize'
+
 
 def get_auth():
     config = configparser.RawConfigParser()
@@ -199,17 +204,23 @@ def main():
         userpass.encode()).decode()
     url = get_url()
 
+    print(headers)
+
+    print(f"url is {url}")
+
     # If you really want to see everything going across the wire,
     # uncomment this. However realize the trace is going to also do
     # things like dump the binary sound packets in text in the
     # console.
     #
-    # websocket.enableTrace(True)
+    #websocket.enableTrace(True)
+
     ws = websocket.WebSocketApp(url,
                                 header=headers,
                                 on_message=on_message,
                                 on_error=on_error,
-                                on_close=on_close)
+                                on_close=on_close,)
+
     ws.on_open = on_open
     ws.args = parse_args()
     # This gives control over the WebSocketApp. This is a blocking
